@@ -1,6 +1,7 @@
 import { fetchMdsRecordByWorkflowId } from "@/api/mds";
 import type { MdsEvaluationRecord } from "@/types/mds";
 import { useQuery } from "@tanstack/react-query";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 
 const MED_STATUS_MAP: Record<string, string> = {
@@ -44,6 +45,49 @@ function InfoRow({
   );
 }
 
+function ImageFullscreenOverlay({
+  src,
+  alt,
+  onClose,
+}: {
+  src: string;
+  alt: string;
+  onClose: () => void;
+}) {
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    },
+    [onClose]
+  );
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [handleKeyDown]);
+
+  return (
+    <button
+      type="button"
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex cursor-default items-center justify-center bg-black/90 p-4 focus:outline-none"
+      aria-label="关闭全屏预览"
+    >
+      <img
+        src={src}
+        alt={alt}
+        className="max-h-full max-w-full object-contain"
+        onClick={(e) => e.stopPropagation()}
+        loading="eager"
+      />
+    </button>
+  );
+}
+
 function ResultLevelBadge({ level }: { level: "high" | "low" }) {
   const isHigh = level === "high";
   return (
@@ -61,6 +105,7 @@ function ResultLevelBadge({ level }: { level: "high" | "low" }) {
 
 export function MdsRecordDetail() {
   const { workflowId } = useParams<{ workflowId: string }>();
+  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
 
   const { data: record, isLoading, error } = useQuery({
     queryKey: ["mds-record", workflowId],
@@ -118,6 +163,13 @@ export function MdsRecordDetail() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      {fullscreenImage && (
+        <ImageFullscreenOverlay
+          src={fullscreenImage}
+          alt="MDS 评估报告"
+          onClose={() => setFullscreenImage(null)}
+        />
+      )}
       <header className="sticky top-0 z-10 border-b border-slate-200/80 bg-white/90 backdrop-blur dark:border-slate-700/80 dark:bg-slate-900/90">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
           <h1 className="truncate font-mono text-sm text-slate-700 dark:text-slate-300">
@@ -139,18 +191,30 @@ export function MdsRecordDetail() {
               报告图片
             </h2>
             {r.image_url ? (
-              <a
-                href={r.image_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block overflow-hidden rounded-md border border-slate-200/80 dark:border-slate-600"
-              >
-                <img
-                  src={r.image_url}
-                  alt="MDS 评估报告"
-                  className="h-auto w-full object-contain"
-                />
-              </a>
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setFullscreenImage(r.image_url)}
+                  className="block w-full overflow-hidden rounded-md border border-slate-200/80 text-left transition-opacity hover:opacity-90 dark:border-slate-600"
+                >
+                  <img
+                    src={r.image_url}
+                    alt="MDS 评估报告"
+                    className="h-auto w-full cursor-zoom-in object-contain"
+                  />
+                </button>
+                <p className="flex justify-center gap-4 text-xs text-slate-500 dark:text-slate-400">
+                  <span>点击图片全屏预览</span>
+                  <a
+                    href={r.image_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sky-600 hover:underline dark:text-sky-400"
+                  >
+                    新窗口打开
+                  </a>
+                </p>
+              </div>
             ) : (
               <p className="text-slate-500">无图片</p>
             )}
