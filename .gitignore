@@ -14,8 +14,10 @@ build
 
 # Misc
 .DS_Store
+emas-functions/*.zip
 .env
 .env.local
+.env.native
 .env.*.local
 
 # IDE

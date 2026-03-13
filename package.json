@@ -17,7 +17,8 @@
 		"lint:eslint:fix": "eslint . --max-warnings 0 --fix",
 		"lint": "pnpm run \"/lint:./\"",
 		"format": "prettier --write .",
-		"validate": "pnpm lint && pnpm test:ci"
+		"validate": "pnpm lint && pnpm test:ci",
+		"emas:zip": "cd emas-functions/mdsListRecords && zip ../mdsListRecords.zip index.js"
 	},
 	"dependencies": {
 		"@tanstack/react-query": "^5.90.10",
